@@ -53,7 +53,7 @@ void CalcCovariance3D(float3x3 rotMat, out float3 sigma0, out float3 sigma1)
 }
 
 // from "EWA Splatting" (Zwicker et al 2002) eq. 31
-float3 CalcCovariance2D(float3 worldPos, float3 cov3d0, float3 cov3d1, float4x4 matrixV, float4x4 matrixP, float4 screenParams)
+float4 CalcCovariance2D(float3 worldPos, float3 cov3d0, float3 cov3d1, float4x4 matrixV, float4x4 matrixP, float4 screenParams)
 {
     float4x4 viewMatrix = matrixV;
     float3 viewPos = mul(viewMatrix, float4(worldPos, 1)).xyz;
@@ -83,10 +83,18 @@ float3 CalcCovariance2D(float3 worldPos, float3 cov3d0, float3 cov3d1, float4x4 
     );
     float3x3 cov = mul(T, mul(V, transpose(T)));
 
+    float det_orig = cov._m00 * cov._m11 - cov._m01 * cov._m10;
+
     // Low pass filter to make each splat at least 1px size.
     cov._m00 += 0.3;
     cov._m11 += 0.3;
-    return float3(cov._m00, cov._m01, cov._m11);
+
+    // Anti-Aliasing
+    float det_blur = cov._m00 * cov._m11 - cov._m01 * cov._m10;
+    float compensation = sqrt(max(0.f, det_orig / det_blur));
+
+
+    return float4(cov._m00, cov._m01, cov._m11, compensation);
 }
 
 float3 CalcConic(float3 cov2d)
