@@ -524,9 +524,9 @@ struct ExportSplatData
     float3 pos;
     float3 nor;
     float3 dc0;
-    float4 shR14; float4 shR58; float4 shR9C; float3 shRDF;
-    float4 shG14; float4 shG58; float4 shG9C; float3 shGDF;
-    float4 shB14; float4 shB58; float4 shB9C; float3 shBDF;
+    // float4 shR14; float4 shR58; float4 shR9C; float3 shRDF;
+    // float4 shG14; float4 shG58; float4 shG9C; float3 shGDF;
+    // float4 shB14; float4 shB58; float4 shB9C; float3 shBDF;
     float opacity;
     float3 scale;
     float4 rot;
@@ -545,44 +545,44 @@ float InvSigmoid(float v)
 // SH rotation
 #include "SphericalHarmonics.hlsl"
 
-void RotateSH(inout SplatSHData sh, float3x3 rot)
-{
-    float3 shin[16];
-    float3 shout[16];
-    shin[0] = sh.col;
-    shin[1] = sh.sh1;
-    shin[2] = sh.sh2;
-    shin[3] = sh.sh3;
-    shin[4] = sh.sh4;
-    shin[5] = sh.sh5;
-    shin[6] = sh.sh6;
-    shin[7] = sh.sh7;
-    shin[8] = sh.sh8;
-    shin[9] = sh.sh9;
-    shin[10] = sh.sh10;
-    shin[11] = sh.sh11;
-    shin[12] = sh.sh12;
-    shin[13] = sh.sh13;
-    shin[14] = sh.sh14;
-    shin[15] = sh.sh15;
-    RotateSH(rot, 4, shin, shout);
-    sh.col = shout[0];
-    sh.sh1 = shout[1];
-    sh.sh2 = shout[2];
-    sh.sh3 = shout[3];
-    sh.sh4 = shout[4];
-    sh.sh5 = shout[5];
-    sh.sh6 = shout[6];
-    sh.sh7 = shout[7];
-    sh.sh8 = shout[8];
-    sh.sh9 = shout[9];
-    sh.sh10 = shout[10];
-    sh.sh11 = shout[11];
-    sh.sh12 = shout[12];
-    sh.sh13 = shout[13];
-    sh.sh14 = shout[14];
-    sh.sh15 = shout[15];
-}
+// void RotateSH(inout SplatSHData sh, float3x3 rot)
+// {
+//     float3 shin[16];
+//     float3 shout[16];
+//     shin[0] = sh.col;
+//     shin[1] = sh.sh1;
+//     shin[2] = sh.sh2;
+//     shin[3] = sh.sh3;
+//     shin[4] = sh.sh4;
+//     shin[5] = sh.sh5;
+//     shin[6] = sh.sh6;
+//     shin[7] = sh.sh7;
+//     shin[8] = sh.sh8;
+//     shin[9] = sh.sh9;
+//     shin[10] = sh.sh10;
+//     shin[11] = sh.sh11;
+//     shin[12] = sh.sh12;
+//     shin[13] = sh.sh13;
+//     shin[14] = sh.sh14;
+//     shin[15] = sh.sh15;
+//     RotateSH(rot, 4, shin, shout);
+//     sh.col = shout[0];
+//     sh.sh1 = shout[1];
+//     sh.sh2 = shout[2];
+//     sh.sh3 = shout[3];
+//     sh.sh4 = shout[4];
+//     sh.sh5 = shout[5];
+//     sh.sh6 = shout[6];
+//     sh.sh7 = shout[7];
+//     sh.sh8 = shout[8];
+//     sh.sh9 = shout[9];
+//     sh.sh10 = shout[10];
+//     sh.sh11 = shout[11];
+//     sh.sh12 = shout[12];
+//     sh.sh13 = shout[13];
+//     sh.sh14 = shout[14];
+//     sh.sh15 = shout[15];
+// }
 
 float3x3 CalcSHRotMatrix(float4x4 objToWorld)
 {
@@ -637,8 +637,8 @@ void CSExportData (uint3 id : SV_DispatchThreadID)
         src.rot = QuatMul(_ExportTransformRotation, src.rot);
         src.scale *= abs(_ExportTransformScale);
 
-        float3x3 shRot = CalcSHRotMatrix(_MatrixObjectToWorld);
-        RotateSH(src.sh, shRot);
+        // float3x3 shRot = CalcSHRotMatrix(_MatrixObjectToWorld);
+        // RotateSH(src.sh, shRot);
     }
 
     ExportSplatData dst;
@@ -646,20 +646,20 @@ void CSExportData (uint3 id : SV_DispatchThreadID)
     dst.nor = 0;
     dst.dc0 = ColorToSH0(src.sh.col);
     
-    dst.shR14 = float4(src.sh.sh1.r, src.sh.sh2.r, src.sh.sh3.r, src.sh.sh4.r);
-    dst.shR58 = float4(src.sh.sh5.r, src.sh.sh6.r, src.sh.sh7.r, src.sh.sh8.r);
-    dst.shR9C = float4(src.sh.sh9.r, src.sh.sh10.r, src.sh.sh11.r, src.sh.sh12.r);
-    dst.shRDF = float3(src.sh.sh13.r, src.sh.sh14.r, src.sh.sh15.r);
+    // dst.shR14 = float4(src.sh.sh1.r, src.sh.sh2.r, src.sh.sh3.r, src.sh.sh4.r);
+    // dst.shR58 = float4(src.sh.sh5.r, src.sh.sh6.r, src.sh.sh7.r, src.sh.sh8.r);
+    // dst.shR9C = float4(src.sh.sh9.r, src.sh.sh10.r, src.sh.sh11.r, src.sh.sh12.r);
+    // dst.shRDF = float3(src.sh.sh13.r, src.sh.sh14.r, src.sh.sh15.r);
     
-    dst.shG14 = float4(src.sh.sh1.g, src.sh.sh2.g, src.sh.sh3.g, src.sh.sh4.g);
-    dst.shG58 = float4(src.sh.sh5.g, src.sh.sh6.g, src.sh.sh7.g, src.sh.sh8.g);
-    dst.shG9C = float4(src.sh.sh9.g, src.sh.sh10.g, src.sh.sh11.g, src.sh.sh12.g);
-    dst.shGDF = float3(src.sh.sh13.g, src.sh.sh14.g, src.sh.sh15.g);
+    // dst.shG14 = float4(src.sh.sh1.g, src.sh.sh2.g, src.sh.sh3.g, src.sh.sh4.g);
+    // dst.shG58 = float4(src.sh.sh5.g, src.sh.sh6.g, src.sh.sh7.g, src.sh.sh8.g);
+    // dst.shG9C = float4(src.sh.sh9.g, src.sh.sh10.g, src.sh.sh11.g, src.sh.sh12.g);
+    // dst.shGDF = float3(src.sh.sh13.g, src.sh.sh14.g, src.sh.sh15.g);
     
-    dst.shB14 = float4(src.sh.sh1.b, src.sh.sh2.b, src.sh.sh3.b, src.sh.sh4.b);
-    dst.shB58 = float4(src.sh.sh5.b, src.sh.sh6.b, src.sh.sh7.b, src.sh.sh8.b);
-    dst.shB9C = float4(src.sh.sh9.b, src.sh.sh10.b, src.sh.sh11.b, src.sh.sh12.b);
-    dst.shBDF = float3(src.sh.sh13.b, src.sh.sh14.b, src.sh.sh15.b);
+    // dst.shB14 = float4(src.sh.sh1.b, src.sh.sh2.b, src.sh.sh3.b, src.sh.sh4.b);
+    // dst.shB58 = float4(src.sh.sh5.b, src.sh.sh6.b, src.sh.sh7.b, src.sh.sh8.b);
+    // dst.shB9C = float4(src.sh.sh9.b, src.sh.sh10.b, src.sh.sh11.b, src.sh.sh12.b);
+    // dst.shBDF = float3(src.sh.sh13.b, src.sh.sh14.b, src.sh.sh15.b);
     
     dst.opacity = InvSigmoid(src.opacity);
     dst.scale = log(src.scale);
@@ -708,7 +708,7 @@ void CSCopySplats (uint3 id : SV_DispatchThreadID)
     src.scale *= abs(_CopyTransformScale);
 
     float3x3 shRot = CalcSHRotMatrix(_CopyTransformMatrix);
-    RotateSH(src.sh, shRot);
+    // RotateSH(src.sh, shRot);
 
     // output data into destination:
     // pos
@@ -727,23 +727,23 @@ void CSCopySplats (uint3 id : SV_DispatchThreadID)
     _CopyDstColor[pixelIndex.xy] = float4(src.sh.col, src.opacity);
 
     // SH
-    uint shStride = 192; // 15*3 fp32, rounded up to multiple of 16
-    uint shOffset = dstIdx * shStride;
-    _CopyDstSH.Store3(shOffset + 12 * 0, asuint(src.sh.sh1));
-    _CopyDstSH.Store3(shOffset + 12 * 1, asuint(src.sh.sh2));
-    _CopyDstSH.Store3(shOffset + 12 * 2, asuint(src.sh.sh3));
-    _CopyDstSH.Store3(shOffset + 12 * 3, asuint(src.sh.sh4));
-    _CopyDstSH.Store3(shOffset + 12 * 4, asuint(src.sh.sh5));
-    _CopyDstSH.Store3(shOffset + 12 * 5, asuint(src.sh.sh6));
-    _CopyDstSH.Store3(shOffset + 12 * 6, asuint(src.sh.sh7));
-    _CopyDstSH.Store3(shOffset + 12 * 7, asuint(src.sh.sh8));
-    _CopyDstSH.Store3(shOffset + 12 * 8, asuint(src.sh.sh9));
-    _CopyDstSH.Store3(shOffset + 12 * 9, asuint(src.sh.sh10));
-    _CopyDstSH.Store3(shOffset + 12 * 10, asuint(src.sh.sh11));
-    _CopyDstSH.Store3(shOffset + 12 * 11, asuint(src.sh.sh12));
-    _CopyDstSH.Store3(shOffset + 12 * 12, asuint(src.sh.sh13));
-    _CopyDstSH.Store3(shOffset + 12 * 13, asuint(src.sh.sh14));
-    _CopyDstSH.Store3(shOffset + 12 * 14, asuint(src.sh.sh15));
+    // uint shStride = 192; // 15*3 fp32, rounded up to multiple of 16
+    // uint shOffset = dstIdx * shStride;
+    // _CopyDstSH.Store3(shOffset + 12 * 0, asuint(src.sh.sh1));
+    // _CopyDstSH.Store3(shOffset + 12 * 1, asuint(src.sh.sh2));
+    // _CopyDstSH.Store3(shOffset + 12 * 2, asuint(src.sh.sh3));
+    // _CopyDstSH.Store3(shOffset + 12 * 3, asuint(src.sh.sh4));
+    // _CopyDstSH.Store3(shOffset + 12 * 4, asuint(src.sh.sh5));
+    // _CopyDstSH.Store3(shOffset + 12 * 5, asuint(src.sh.sh6));
+    // _CopyDstSH.Store3(shOffset + 12 * 6, asuint(src.sh.sh7));
+    // _CopyDstSH.Store3(shOffset + 12 * 7, asuint(src.sh.sh8));
+    // _CopyDstSH.Store3(shOffset + 12 * 8, asuint(src.sh.sh9));
+    // _CopyDstSH.Store3(shOffset + 12 * 9, asuint(src.sh.sh10));
+    // _CopyDstSH.Store3(shOffset + 12 * 10, asuint(src.sh.sh11));
+    // _CopyDstSH.Store3(shOffset + 12 * 11, asuint(src.sh.sh12));
+    // _CopyDstSH.Store3(shOffset + 12 * 12, asuint(src.sh.sh13));
+    // _CopyDstSH.Store3(shOffset + 12 * 13, asuint(src.sh.sh14));
+    // _CopyDstSH.Store3(shOffset + 12 * 14, asuint(src.sh.sh15));
 
     // deleted bits
     uint srcWordIdx = srcIdx / 32;

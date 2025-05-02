@@ -274,11 +274,11 @@ namespace GaussianSplatting.Editor
             // cluster SHs
             NativeArray<int> splatSHIndices = default;
             NativeArray<GaussianSplatAsset.SHTableItemFloat16> clusteredSHs = default;
-            if (m_FormatSH >= GaussianSplatAsset.SHFormat.Cluster64k)
-            {
-                EditorUtility.DisplayProgressBar(kProgressTitle, "Cluster SHs", 0.2f);
-                ClusterSHs(inputSplats, m_FormatSH, out clusteredSHs, out splatSHIndices);
-            }
+            // if (m_FormatSH >= GaussianSplatAsset.SHFormat.Cluster64k)
+            // {
+            //     EditorUtility.DisplayProgressBar(kProgressTitle, "Cluster SHs", 0.2f);
+            //     ClusterSHs(inputSplats, m_FormatSH, out clusteredSHs, out splatSHIndices);
+            // }
 
             string baseName = Path.GetFileNameWithoutExtension(FilePickerControl.PathToDisplayString(m_InputFile));
 
@@ -292,7 +292,7 @@ namespace GaussianSplatting.Editor
             string pathPos = $"{m_OutputFolder}/{baseName}_pos.bytes";
             string pathOther = $"{m_OutputFolder}/{baseName}_oth.bytes";
             string pathCol = $"{m_OutputFolder}/{baseName}_col.bytes";
-            string pathSh = $"{m_OutputFolder}/{baseName}_shs.bytes";
+            // string pathSh = $"{m_OutputFolder}/{baseName}_shs.bytes";
 
             // if we are using full lossless (FP32) data, then do not use any chunking, and keep data as-is
             bool useChunks = isUsingChunks;
@@ -301,7 +301,7 @@ namespace GaussianSplatting.Editor
             CreatePositionsData(inputSplats, pathPos, ref dataHash);
             CreateOtherData(inputSplats, pathOther, ref dataHash, splatSHIndices);
             CreateColorData(inputSplats, pathCol, ref dataHash);
-            CreateSHData(inputSplats, pathSh, ref dataHash, clusteredSHs);
+            // CreateSHData(inputSplats, pathSh, ref dataHash, clusteredSHs);
             asset.SetDataHash(dataHash);
 
             splatSHIndices.Dispose();
@@ -316,8 +316,8 @@ namespace GaussianSplatting.Editor
                 useChunks ? AssetDatabase.LoadAssetAtPath<TextAsset>(pathChunk) : null,
                 AssetDatabase.LoadAssetAtPath<TextAsset>(pathPos),
                 AssetDatabase.LoadAssetAtPath<TextAsset>(pathOther),
-                AssetDatabase.LoadAssetAtPath<TextAsset>(pathCol),
-                AssetDatabase.LoadAssetAtPath<TextAsset>(pathSh));
+                AssetDatabase.LoadAssetAtPath<TextAsset>(pathCol)); //,
+                // AssetDatabase.LoadAssetAtPath<TextAsset>(pathSh));
 
             var assetPath = $"{m_OutputFolder}/{baseName}.asset";
             var savedAsset = CreateOrReplaceAsset(asset, assetPath);
@@ -429,83 +429,83 @@ namespace GaussianSplatting.Editor
             }
         }
 
-        [BurstCompile]
-        struct ConvertSHClustersJob : IJobParallelFor
-        {
-            [ReadOnly] public NativeArray<float3> m_Input;
-            public NativeArray<GaussianSplatAsset.SHTableItemFloat16> m_Output;
-            public void Execute(int index)
-            {
-                var addr = index * 15;
-                GaussianSplatAsset.SHTableItemFloat16 res;
-                res.sh1 = new half3(m_Input[addr+0]);
-                res.sh2 = new half3(m_Input[addr+1]);
-                res.sh3 = new half3(m_Input[addr+2]);
-                res.sh4 = new half3(m_Input[addr+3]);
-                res.sh5 = new half3(m_Input[addr+4]);
-                res.sh6 = new half3(m_Input[addr+5]);
-                res.sh7 = new half3(m_Input[addr+6]);
-                res.sh8 = new half3(m_Input[addr+7]);
-                res.sh9 = new half3(m_Input[addr+8]);
-                res.shA = new half3(m_Input[addr+9]);
-                res.shB = new half3(m_Input[addr+10]);
-                res.shC = new half3(m_Input[addr+11]);
-                res.shD = new half3(m_Input[addr+12]);
-                res.shE = new half3(m_Input[addr+13]);
-                res.shF = new half3(m_Input[addr+14]);
-                res.shPadding = default;
-                m_Output[index] = res;
-            }
-        }
-        static bool ClusterSHProgress(float val)
-        {
-            EditorUtility.DisplayProgressBar(kProgressTitle, $"Cluster SHs ({val:P0})", 0.2f + val * 0.5f);
-            return true;
-        }
+        // [BurstCompile]
+        // struct ConvertSHClustersJob : IJobParallelFor
+        // {
+        //     [ReadOnly] public NativeArray<float3> m_Input;
+        //     public NativeArray<GaussianSplatAsset.SHTableItemFloat16> m_Output;
+        //     public void Execute(int index)
+        //     {
+        //         var addr = index * 15;
+        //         GaussianSplatAsset.SHTableItemFloat16 res;
+        //         res.sh1 = new half3(m_Input[addr+0]);
+        //         res.sh2 = new half3(m_Input[addr+1]);
+        //         res.sh3 = new half3(m_Input[addr+2]);
+        //         res.sh4 = new half3(m_Input[addr+3]);
+        //         res.sh5 = new half3(m_Input[addr+4]);
+        //         res.sh6 = new half3(m_Input[addr+5]);
+        //         res.sh7 = new half3(m_Input[addr+6]);
+        //         res.sh8 = new half3(m_Input[addr+7]);
+        //         res.sh9 = new half3(m_Input[addr+8]);
+        //         res.shA = new half3(m_Input[addr+9]);
+        //         res.shB = new half3(m_Input[addr+10]);
+        //         res.shC = new half3(m_Input[addr+11]);
+        //         res.shD = new half3(m_Input[addr+12]);
+        //         res.shE = new half3(m_Input[addr+13]);
+        //         res.shF = new half3(m_Input[addr+14]);
+        //         res.shPadding = default;
+        //         m_Output[index] = res;
+        //     }
+        // }
+        // static bool ClusterSHProgress(float val)
+        // {
+        //     EditorUtility.DisplayProgressBar(kProgressTitle, $"Cluster SHs ({val:P0})", 0.2f + val * 0.5f);
+        //     return true;
+        // }
 
-        static unsafe void ClusterSHs(NativeArray<InputSplatData> splatData, GaussianSplatAsset.SHFormat format, out NativeArray<GaussianSplatAsset.SHTableItemFloat16> shs, out NativeArray<int> shIndices)
-        {
-            shs = default;
-            shIndices = default;
+        // static unsafe void ClusterSHs(NativeArray<InputSplatData> splatData, GaussianSplatAsset.SHFormat format, out NativeArray<GaussianSplatAsset.SHTableItemFloat16> shs, out NativeArray<int> shIndices)
+        // {
+        //     shs = default;
+        //     shIndices = default;
 
-            int shCount = GaussianSplatAsset.GetSHCount(format, splatData.Length);
-            if (shCount >= splatData.Length) // no need to cluster, just use raw data
-                return;
+        //     int shCount = GaussianSplatAsset.GetSHCount(format, splatData.Length);
+        //     if (shCount >= splatData.Length) // no need to cluster, just use raw data
+        //         return;
 
-            const int kShDim = 15 * 3;
-            const int kBatchSize = 2048;
-            float passesOverData = format switch
-            {
-                GaussianSplatAsset.SHFormat.Cluster64k => 0.3f,
-                GaussianSplatAsset.SHFormat.Cluster32k => 0.4f,
-                GaussianSplatAsset.SHFormat.Cluster16k => 0.5f,
-                GaussianSplatAsset.SHFormat.Cluster8k => 0.8f,
-                GaussianSplatAsset.SHFormat.Cluster4k => 1.2f,
-                _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
-            };
+        //     const int kShDim = 15 * 3;
+        //     const int kBatchSize = 2048;
+        //     float passesOverData = format switch
+        //     {
+        //         GaussianSplatAsset.SHFormat.Cluster64k => 0.3f,
+        //         GaussianSplatAsset.SHFormat.Cluster32k => 0.4f,
+        //         GaussianSplatAsset.SHFormat.Cluster16k => 0.5f,
+        //         GaussianSplatAsset.SHFormat.Cluster8k => 0.8f,
+        //         GaussianSplatAsset.SHFormat.Cluster4k => 1.2f,
+        //         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
+        //     };
 
-            float t0 = Time.realtimeSinceStartup;
-            NativeArray<float> shData = new(splatData.Length * kShDim, Allocator.Persistent);
-            GatherSHs(splatData.Length, (InputSplatData*) splatData.GetUnsafeReadOnlyPtr(), (float*) shData.GetUnsafePtr());
+        //     float t0 = Time.realtimeSinceStartup;
+        //     NativeArray<float> shData = new(splatData.Length * kShDim, Allocator.Persistent);
+        //     GatherSHs(splatData.Length, (InputSplatData*) splatData.GetUnsafeReadOnlyPtr(), (float*) shData.GetUnsafePtr());
 
-            NativeArray<float> shMeans = new(shCount * kShDim, Allocator.Persistent);
-            shIndices = new(splatData.Length, Allocator.Persistent);
+        //     NativeArray<float> shMeans = new(shCount * kShDim, Allocator.Persistent);
+        //     shIndices = new(splatData.Length, Allocator.Persistent);
 
-            KMeansClustering.Calculate(kShDim, shData, kBatchSize, passesOverData, ClusterSHProgress, shMeans, shIndices);
-            shData.Dispose();
+        //     KMeansClustering.Calculate(kShDim, shData, kBatchSize, passesOverData, ClusterSHProgress, shMeans, shIndices);
+        //     shData.Dispose();
 
-            shs = new NativeArray<GaussianSplatAsset.SHTableItemFloat16>(shCount, Allocator.Persistent);
+        //     shs = new NativeArray<GaussianSplatAsset.SHTableItemFloat16>(shCount, Allocator.Persistent);
 
-            ConvertSHClustersJob job = new ConvertSHClustersJob
-            {
-                m_Input = shMeans.Reinterpret<float3>(4),
-                m_Output = shs
-            };
-            job.Schedule(shCount, 256).Complete();
-            shMeans.Dispose();
-            float t1 = Time.realtimeSinceStartup;
-            Debug.Log($"GS: clustered {splatData.Length/1000000.0:F2}M SHs into {shCount/1024}K ({passesOverData:F1}pass/{kBatchSize}batch) in {t1-t0:F0}s");
-        }
+        //     ConvertSHClustersJob job = new ConvertSHClustersJob
+        //     {
+        //         m_Input = shMeans.Reinterpret<float3>(4),
+        //         m_Output = shs
+        //     };
+        //     job.Schedule(shCount, 256).Complete();
+        //     shMeans.Dispose();
+        //     float t1 = Time.realtimeSinceStartup;
+        //     Debug.Log($"GS: clustered {splatData.Length/1000000.0:F2}M SHs into {shCount/1024}K ({passesOverData:F1}pass/{kBatchSize}batch) in {t1-t0:F0}s");
+        // }
 
         [BurstCompile]
         struct CalcChunkDataJob : IJobParallelFor
@@ -518,7 +518,7 @@ namespace GaussianSplatting.Editor
                 float3 chunkMinpos = float.PositiveInfinity;
                 float3 chunkMinscl = float.PositiveInfinity;
                 float4 chunkMincol = float.PositiveInfinity;
-                float3 chunkMinshs = float.PositiveInfinity;
+                // float3 chunkMinshs = float.PositiveInfinity;
                 float3 chunkMaxpos = float.NegativeInfinity;
                 float3 chunkMaxscl = float.NegativeInfinity;
                 float4 chunkMaxcol = float.NegativeInfinity;
@@ -541,47 +541,47 @@ namespace GaussianSplatting.Editor
                     chunkMinpos = math.min(chunkMinpos, s.pos);
                     chunkMinscl = math.min(chunkMinscl, s.scale);
                     chunkMincol = math.min(chunkMincol, new float4(s.dc0, s.opacity));
-                    chunkMinshs = math.min(chunkMinshs, s.sh1);
-                    chunkMinshs = math.min(chunkMinshs, s.sh2);
-                    chunkMinshs = math.min(chunkMinshs, s.sh3);
-                    chunkMinshs = math.min(chunkMinshs, s.sh4);
-                    chunkMinshs = math.min(chunkMinshs, s.sh5);
-                    chunkMinshs = math.min(chunkMinshs, s.sh6);
-                    chunkMinshs = math.min(chunkMinshs, s.sh7);
-                    chunkMinshs = math.min(chunkMinshs, s.sh8);
-                    chunkMinshs = math.min(chunkMinshs, s.sh9);
-                    chunkMinshs = math.min(chunkMinshs, s.shA);
-                    chunkMinshs = math.min(chunkMinshs, s.shB);
-                    chunkMinshs = math.min(chunkMinshs, s.shC);
-                    chunkMinshs = math.min(chunkMinshs, s.shD);
-                    chunkMinshs = math.min(chunkMinshs, s.shE);
-                    chunkMinshs = math.min(chunkMinshs, s.shF);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh1);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh2);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh3);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh4);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh5);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh6);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh7);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh8);
+                    // chunkMinshs = math.min(chunkMinshs, s.sh9);
+                    // chunkMinshs = math.min(chunkMinshs, s.shA);
+                    // chunkMinshs = math.min(chunkMinshs, s.shB);
+                    // chunkMinshs = math.min(chunkMinshs, s.shC);
+                    // chunkMinshs = math.min(chunkMinshs, s.shD);
+                    // chunkMinshs = math.min(chunkMinshs, s.shE);
+                    // chunkMinshs = math.min(chunkMinshs, s.shF);
 
                     chunkMaxpos = math.max(chunkMaxpos, s.pos);
                     chunkMaxscl = math.max(chunkMaxscl, s.scale);
                     chunkMaxcol = math.max(chunkMaxcol, new float4(s.dc0, s.opacity));
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh1);
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh2);
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh3);
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh4);
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh5);
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh6);
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh7);
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh8);
-                    chunkMaxshs = math.max(chunkMaxshs, s.sh9);
-                    chunkMaxshs = math.max(chunkMaxshs, s.shA);
-                    chunkMaxshs = math.max(chunkMaxshs, s.shB);
-                    chunkMaxshs = math.max(chunkMaxshs, s.shC);
-                    chunkMaxshs = math.max(chunkMaxshs, s.shD);
-                    chunkMaxshs = math.max(chunkMaxshs, s.shE);
-                    chunkMaxshs = math.max(chunkMaxshs, s.shF);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh1);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh2);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh3);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh4);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh5);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh6);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh7);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh8);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.sh9);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.shA);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.shB);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.shC);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.shD);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.shE);
+                    // chunkMaxshs = math.max(chunkMaxshs, s.shF);
                 }
 
                 // make sure bounds are not zero
                 chunkMaxpos = math.max(chunkMaxpos, chunkMinpos + 1.0e-5f);
                 chunkMaxscl = math.max(chunkMaxscl, chunkMinscl + 1.0e-5f);
                 chunkMaxcol = math.max(chunkMaxcol, chunkMincol + 1.0e-5f);
-                chunkMaxshs = math.max(chunkMaxshs, chunkMinshs + 1.0e-5f);
+                // chunkMaxshs = math.max(chunkMaxshs, chunkMinshs + 1.0e-5f);
 
                 // store chunk info
                 GaussianSplatAsset.ChunkInfo info = default;
@@ -595,9 +595,9 @@ namespace GaussianSplatting.Editor
                 info.colG = math.f32tof16(chunkMincol.y) | (math.f32tof16(chunkMaxcol.y) << 16);
                 info.colB = math.f32tof16(chunkMincol.z) | (math.f32tof16(chunkMaxcol.z) << 16);
                 info.colA = math.f32tof16(chunkMincol.w) | (math.f32tof16(chunkMaxcol.w) << 16);
-                info.shR = math.f32tof16(chunkMinshs.x) | (math.f32tof16(chunkMaxshs.x) << 16);
-                info.shG = math.f32tof16(chunkMinshs.y) | (math.f32tof16(chunkMaxshs.y) << 16);
-                info.shB = math.f32tof16(chunkMinshs.z) | (math.f32tof16(chunkMaxshs.z) << 16);
+                // info.shR = math.f32tof16(chunkMinshs.x) | (math.f32tof16(chunkMaxshs.x) << 16);
+                // info.shG = math.f32tof16(chunkMinshs.y) | (math.f32tof16(chunkMaxshs.y) << 16);
+                // info.shB = math.f32tof16(chunkMinshs.z) | (math.f32tof16(chunkMaxshs.z) << 16);
                 chunks[chunkIdx] = info;
 
                 // adjust data to be 0..1 within chunk bounds
@@ -608,21 +608,21 @@ namespace GaussianSplatting.Editor
                     s.scale = ((float3)s.scale - chunkMinscl) / (chunkMaxscl - chunkMinscl);
                     s.dc0 = ((float3)s.dc0 - chunkMincol.xyz) / (chunkMaxcol.xyz - chunkMincol.xyz);
                     s.opacity = (s.opacity - chunkMincol.w) / (chunkMaxcol.w - chunkMincol.w);
-                    s.sh1 = ((float3) s.sh1 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.sh2 = ((float3) s.sh2 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.sh3 = ((float3) s.sh3 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.sh4 = ((float3) s.sh4 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.sh5 = ((float3) s.sh5 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.sh6 = ((float3) s.sh6 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.sh7 = ((float3) s.sh7 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.sh8 = ((float3) s.sh8 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.sh9 = ((float3) s.sh9 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.shA = ((float3) s.shA - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.shB = ((float3) s.shB - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.shC = ((float3) s.shC - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.shD = ((float3) s.shD - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.shE = ((float3) s.shE - chunkMinshs) / (chunkMaxshs - chunkMinshs);
-                    s.shF = ((float3) s.shF - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh1 = ((float3) s.sh1 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh2 = ((float3) s.sh2 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh3 = ((float3) s.sh3 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh4 = ((float3) s.sh4 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh5 = ((float3) s.sh5 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh6 = ((float3) s.sh6 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh7 = ((float3) s.sh7 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh8 = ((float3) s.sh8 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.sh9 = ((float3) s.sh9 - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.shA = ((float3) s.shA - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.shB = ((float3) s.shB - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.shC = ((float3) s.shC - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.shD = ((float3) s.shD - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.shE = ((float3) s.shE - chunkMinshs) / (chunkMaxshs - chunkMinshs);
+                    // s.shF = ((float3) s.shF - chunkMinshs) / (chunkMaxshs - chunkMinshs);
                     splatData[i] = s;
                 }
             }
@@ -921,139 +921,139 @@ namespace GaussianSplatting.Editor
             data.Dispose();
         }
 
-        [BurstCompile]
-        struct CreateSHDataJob : IJobParallelFor
-        {
-            [ReadOnly] public NativeArray<InputSplatData> m_Input;
-            public GaussianSplatAsset.SHFormat m_Format;
-            public NativeArray<byte> m_Output;
-            public unsafe void Execute(int index)
-            {
-                var splat = m_Input[index];
+        // [BurstCompile]
+        // struct CreateSHDataJob : IJobParallelFor
+        // {
+        //     [ReadOnly] public NativeArray<InputSplatData> m_Input;
+        //     public GaussianSplatAsset.SHFormat m_Format;
+        //     public NativeArray<byte> m_Output;
+        //     public unsafe void Execute(int index)
+        //     {
+        //         var splat = m_Input[index];
 
-                switch (m_Format)
-                {
-                    case GaussianSplatAsset.SHFormat.Float32:
-                    {
-                        GaussianSplatAsset.SHTableItemFloat32 res;
-                        res.sh1 = splat.sh1;
-                        res.sh2 = splat.sh2;
-                        res.sh3 = splat.sh3;
-                        res.sh4 = splat.sh4;
-                        res.sh5 = splat.sh5;
-                        res.sh6 = splat.sh6;
-                        res.sh7 = splat.sh7;
-                        res.sh8 = splat.sh8;
-                        res.sh9 = splat.sh9;
-                        res.shA = splat.shA;
-                        res.shB = splat.shB;
-                        res.shC = splat.shC;
-                        res.shD = splat.shD;
-                        res.shE = splat.shE;
-                        res.shF = splat.shF;
-                        res.shPadding = default;
-                        ((GaussianSplatAsset.SHTableItemFloat32*) m_Output.GetUnsafePtr())[index] = res;
-                    }
-                        break;
-                    case GaussianSplatAsset.SHFormat.Float16:
-                    {
-                        GaussianSplatAsset.SHTableItemFloat16 res;
-                        res.sh1 = new half3(splat.sh1);
-                        res.sh2 = new half3(splat.sh2);
-                        res.sh3 = new half3(splat.sh3);
-                        res.sh4 = new half3(splat.sh4);
-                        res.sh5 = new half3(splat.sh5);
-                        res.sh6 = new half3(splat.sh6);
-                        res.sh7 = new half3(splat.sh7);
-                        res.sh8 = new half3(splat.sh8);
-                        res.sh9 = new half3(splat.sh9);
-                        res.shA = new half3(splat.shA);
-                        res.shB = new half3(splat.shB);
-                        res.shC = new half3(splat.shC);
-                        res.shD = new half3(splat.shD);
-                        res.shE = new half3(splat.shE);
-                        res.shF = new half3(splat.shF);
-                        res.shPadding = default;
-                        ((GaussianSplatAsset.SHTableItemFloat16*) m_Output.GetUnsafePtr())[index] = res;
-                    }
-                        break;
-                    case GaussianSplatAsset.SHFormat.Norm11:
-                    {
-                        GaussianSplatAsset.SHTableItemNorm11 res;
-                        res.sh1 = EncodeFloat3ToNorm11(splat.sh1);
-                        res.sh2 = EncodeFloat3ToNorm11(splat.sh2);
-                        res.sh3 = EncodeFloat3ToNorm11(splat.sh3);
-                        res.sh4 = EncodeFloat3ToNorm11(splat.sh4);
-                        res.sh5 = EncodeFloat3ToNorm11(splat.sh5);
-                        res.sh6 = EncodeFloat3ToNorm11(splat.sh6);
-                        res.sh7 = EncodeFloat3ToNorm11(splat.sh7);
-                        res.sh8 = EncodeFloat3ToNorm11(splat.sh8);
-                        res.sh9 = EncodeFloat3ToNorm11(splat.sh9);
-                        res.shA = EncodeFloat3ToNorm11(splat.shA);
-                        res.shB = EncodeFloat3ToNorm11(splat.shB);
-                        res.shC = EncodeFloat3ToNorm11(splat.shC);
-                        res.shD = EncodeFloat3ToNorm11(splat.shD);
-                        res.shE = EncodeFloat3ToNorm11(splat.shE);
-                        res.shF = EncodeFloat3ToNorm11(splat.shF);
-                        ((GaussianSplatAsset.SHTableItemNorm11*) m_Output.GetUnsafePtr())[index] = res;
-                    }
-                        break;
-                    case GaussianSplatAsset.SHFormat.Norm6:
-                    {
-                        GaussianSplatAsset.SHTableItemNorm6 res;
-                        res.sh1 = EncodeFloat3ToNorm565(splat.sh1);
-                        res.sh2 = EncodeFloat3ToNorm565(splat.sh2);
-                        res.sh3 = EncodeFloat3ToNorm565(splat.sh3);
-                        res.sh4 = EncodeFloat3ToNorm565(splat.sh4);
-                        res.sh5 = EncodeFloat3ToNorm565(splat.sh5);
-                        res.sh6 = EncodeFloat3ToNorm565(splat.sh6);
-                        res.sh7 = EncodeFloat3ToNorm565(splat.sh7);
-                        res.sh8 = EncodeFloat3ToNorm565(splat.sh8);
-                        res.sh9 = EncodeFloat3ToNorm565(splat.sh9);
-                        res.shA = EncodeFloat3ToNorm565(splat.shA);
-                        res.shB = EncodeFloat3ToNorm565(splat.shB);
-                        res.shC = EncodeFloat3ToNorm565(splat.shC);
-                        res.shD = EncodeFloat3ToNorm565(splat.shD);
-                        res.shE = EncodeFloat3ToNorm565(splat.shE);
-                        res.shF = EncodeFloat3ToNorm565(splat.shF);
-                        res.shPadding = default;
-                        ((GaussianSplatAsset.SHTableItemNorm6*) m_Output.GetUnsafePtr())[index] = res;
-                    }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
+        //         switch (m_Format)
+        //         {
+        //             case GaussianSplatAsset.SHFormat.Float32:
+        //             {
+        //                 GaussianSplatAsset.SHTableItemFloat32 res;
+        //                 res.sh1 = splat.sh1;
+        //                 res.sh2 = splat.sh2;
+        //                 res.sh3 = splat.sh3;
+        //                 res.sh4 = splat.sh4;
+        //                 res.sh5 = splat.sh5;
+        //                 res.sh6 = splat.sh6;
+        //                 res.sh7 = splat.sh7;
+        //                 res.sh8 = splat.sh8;
+        //                 res.sh9 = splat.sh9;
+        //                 res.shA = splat.shA;
+        //                 res.shB = splat.shB;
+        //                 res.shC = splat.shC;
+        //                 res.shD = splat.shD;
+        //                 res.shE = splat.shE;
+        //                 res.shF = splat.shF;
+        //                 res.shPadding = default;
+        //                 ((GaussianSplatAsset.SHTableItemFloat32*) m_Output.GetUnsafePtr())[index] = res;
+        //             }
+        //                 break;
+        //             case GaussianSplatAsset.SHFormat.Float16:
+        //             {
+        //                 GaussianSplatAsset.SHTableItemFloat16 res;
+        //                 res.sh1 = new half3(splat.sh1);
+        //                 res.sh2 = new half3(splat.sh2);
+        //                 res.sh3 = new half3(splat.sh3);
+        //                 res.sh4 = new half3(splat.sh4);
+        //                 res.sh5 = new half3(splat.sh5);
+        //                 res.sh6 = new half3(splat.sh6);
+        //                 res.sh7 = new half3(splat.sh7);
+        //                 res.sh8 = new half3(splat.sh8);
+        //                 res.sh9 = new half3(splat.sh9);
+        //                 res.shA = new half3(splat.shA);
+        //                 res.shB = new half3(splat.shB);
+        //                 res.shC = new half3(splat.shC);
+        //                 res.shD = new half3(splat.shD);
+        //                 res.shE = new half3(splat.shE);
+        //                 res.shF = new half3(splat.shF);
+        //                 res.shPadding = default;
+        //                 ((GaussianSplatAsset.SHTableItemFloat16*) m_Output.GetUnsafePtr())[index] = res;
+        //             }
+        //                 break;
+        //             case GaussianSplatAsset.SHFormat.Norm11:
+        //             {
+        //                 GaussianSplatAsset.SHTableItemNorm11 res;
+        //                 res.sh1 = EncodeFloat3ToNorm11(splat.sh1);
+        //                 res.sh2 = EncodeFloat3ToNorm11(splat.sh2);
+        //                 res.sh3 = EncodeFloat3ToNorm11(splat.sh3);
+        //                 res.sh4 = EncodeFloat3ToNorm11(splat.sh4);
+        //                 res.sh5 = EncodeFloat3ToNorm11(splat.sh5);
+        //                 res.sh6 = EncodeFloat3ToNorm11(splat.sh6);
+        //                 res.sh7 = EncodeFloat3ToNorm11(splat.sh7);
+        //                 res.sh8 = EncodeFloat3ToNorm11(splat.sh8);
+        //                 res.sh9 = EncodeFloat3ToNorm11(splat.sh9);
+        //                 res.shA = EncodeFloat3ToNorm11(splat.shA);
+        //                 res.shB = EncodeFloat3ToNorm11(splat.shB);
+        //                 res.shC = EncodeFloat3ToNorm11(splat.shC);
+        //                 res.shD = EncodeFloat3ToNorm11(splat.shD);
+        //                 res.shE = EncodeFloat3ToNorm11(splat.shE);
+        //                 res.shF = EncodeFloat3ToNorm11(splat.shF);
+        //                 ((GaussianSplatAsset.SHTableItemNorm11*) m_Output.GetUnsafePtr())[index] = res;
+        //             }
+        //                 break;
+        //             case GaussianSplatAsset.SHFormat.Norm6:
+        //             {
+        //                 GaussianSplatAsset.SHTableItemNorm6 res;
+        //                 res.sh1 = EncodeFloat3ToNorm565(splat.sh1);
+        //                 res.sh2 = EncodeFloat3ToNorm565(splat.sh2);
+        //                 res.sh3 = EncodeFloat3ToNorm565(splat.sh3);
+        //                 res.sh4 = EncodeFloat3ToNorm565(splat.sh4);
+        //                 res.sh5 = EncodeFloat3ToNorm565(splat.sh5);
+        //                 res.sh6 = EncodeFloat3ToNorm565(splat.sh6);
+        //                 res.sh7 = EncodeFloat3ToNorm565(splat.sh7);
+        //                 res.sh8 = EncodeFloat3ToNorm565(splat.sh8);
+        //                 res.sh9 = EncodeFloat3ToNorm565(splat.sh9);
+        //                 res.shA = EncodeFloat3ToNorm565(splat.shA);
+        //                 res.shB = EncodeFloat3ToNorm565(splat.shB);
+        //                 res.shC = EncodeFloat3ToNorm565(splat.shC);
+        //                 res.shD = EncodeFloat3ToNorm565(splat.shD);
+        //                 res.shE = EncodeFloat3ToNorm565(splat.shE);
+        //                 res.shF = EncodeFloat3ToNorm565(splat.shF);
+        //                 res.shPadding = default;
+        //                 ((GaussianSplatAsset.SHTableItemNorm6*) m_Output.GetUnsafePtr())[index] = res;
+        //             }
+        //                 break;
+        //             default:
+        //                 break;
+        //         }
+        //     }
+        // }
 
-        static void EmitSimpleDataFile<T>(NativeArray<T> data, string filePath, ref Hash128 dataHash) where T : unmanaged
-        {
-            dataHash.Append(data);
-            using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-            fs.Write(data.Reinterpret<byte>(UnsafeUtility.SizeOf<T>()));
-        }
+        // static void EmitSimpleDataFile<T>(NativeArray<T> data, string filePath, ref Hash128 dataHash) where T : unmanaged
+        // {
+        //     dataHash.Append(data);
+        //     using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+        //     fs.Write(data.Reinterpret<byte>(UnsafeUtility.SizeOf<T>()));
+        // }
 
-        void CreateSHData(NativeArray<InputSplatData> inputSplats, string filePath, ref Hash128 dataHash, NativeArray<GaussianSplatAsset.SHTableItemFloat16> clusteredSHs)
-        {
-            if (clusteredSHs.IsCreated)
-            {
-                EmitSimpleDataFile(clusteredSHs, filePath, ref dataHash);
-            }
-            else
-            {
-                int dataLen = (int)GaussianSplatAsset.CalcSHDataSize(inputSplats.Length, m_FormatSH);
-                NativeArray<byte> data = new(dataLen, Allocator.TempJob);
-                CreateSHDataJob job = new CreateSHDataJob
-                {
-                    m_Input = inputSplats,
-                    m_Format = m_FormatSH,
-                    m_Output = data
-                };
-                job.Schedule(inputSplats.Length, 8192).Complete();
-                EmitSimpleDataFile(data, filePath, ref dataHash);
-                data.Dispose();
-            }
-        }
+        // void CreateSHData(NativeArray<InputSplatData> inputSplats, string filePath, ref Hash128 dataHash, NativeArray<GaussianSplatAsset.SHTableItemFloat16> clusteredSHs)
+        // {
+        //     if (clusteredSHs.IsCreated)
+        //     {
+        //         EmitSimpleDataFile(clusteredSHs, filePath, ref dataHash);
+        //     }
+        //     else
+        //     {
+        //         int dataLen = (int)GaussianSplatAsset.CalcSHDataSize(inputSplats.Length, m_FormatSH);
+        //         NativeArray<byte> data = new(dataLen, Allocator.TempJob);
+        //         CreateSHDataJob job = new CreateSHDataJob
+        //         {
+        //             m_Input = inputSplats,
+        //             m_Format = m_FormatSH,
+        //             m_Output = data
+        //         };
+        //         job.Schedule(inputSplats.Length, 8192).Complete();
+        //         EmitSimpleDataFile(data, filePath, ref dataHash);
+        //         data.Dispose();
+        //     }
+        // }
 
         static GaussianSplatAsset.CameraInfo[] LoadJsonCamerasFile(string curPath, bool doImport)
         {
