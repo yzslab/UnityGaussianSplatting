@@ -86,8 +86,8 @@ float4 CalcCovariance2D(float3 worldPos, float3 cov3d0, float3 cov3d1, float4x4 
     float det_orig = cov._m00 * cov._m11 - cov._m01 * cov._m10;
 
     // Low pass filter to make each splat at least 1px size.
-    cov._m00 += 0.1;
-    cov._m11 += 0.1;
+    cov._m00 += 0.3;
+    cov._m11 += 0.3;
 
     // Anti-Aliasing
     float det_blur = cov._m00 * cov._m11 - cov._m01 * cov._m10;
