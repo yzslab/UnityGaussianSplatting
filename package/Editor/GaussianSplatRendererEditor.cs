@@ -418,7 +418,7 @@ namespace GaussianSplatting.Editor
                 int wordIdx = i >> 5;
                 int bitIdx = i & 31;
                 bool isDeleted = (deleted[wordIdx] & (1u << bitIdx)) != 0;
-                bool isCutout = data[i].nor.sqrMagnitude > 0;
+                bool isCutout = false;
                 if (!isDeleted && !isCutout)
                     ++aliveCount;
             }
@@ -432,7 +432,7 @@ namespace GaussianSplatting.Editor
                 int wordIdx = i >> 5;
                 int bitIdx = i & 31;
                 bool isDeleted = (deleted[wordIdx] & (1u << bitIdx)) != 0;
-                bool isCutout = data[i].nor.sqrMagnitude > 0;
+                bool isCutout = false;
                 if (!isDeleted && !isCutout)
                 {
                     var splat = data[i];
