@@ -4,20 +4,19 @@ using System.IO;
 using GaussianSplatting.Runtime;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
 namespace GaussianSplatting.Editor.Utils
 {
-    // input file splat data is expected to be in this format
+    // Internal degree-1 layout; also matches ExportSplatData in SplatUtilities.compute.
     public struct InputSplatData
     {
         public Vector3 pos;
-        // public Vector3 nor;
+        public Vector3 nor;
         public Vector3 dc0;
-        // public Vector3 sh1, sh2, sh3, sh4, sh5, sh6, sh7, sh8, sh9, shA, shB, shC, shD, shE, shF;
+        public Vector3 sh1, sh2, sh3;
         public float opacity;
         public Vector3 scale;
         public Quaternion rot;
@@ -44,17 +43,29 @@ namespace GaussianSplatting.Editor.Utils
         {
             if (isPLY(filePath))
             {
-                NativeArray<byte> verticesRawData;
-                PLYFileReader.ReadFile(filePath, out var splatCount, out var splatStride, out List<string> _, out verticesRawData);
-                if (UnsafeUtility.SizeOf<InputSplatData>() != splatStride)
-                    throw new IOException($"PLY vertex size mismatch, expected {UnsafeUtility.SizeOf<InputSplatData>()} but file has {splatStride}");
-
-                // reorder SHs
-                // NativeArray<float> floatData = verticesRawData.Reinterpret<float>(1);
-                // ReorderSHs(splatCount, (float*)floatData.GetUnsafePtr());
-
-                splats = verticesRawData.Reinterpret<InputSplatData>(1);
-                LinearizeData(splats);
+                PLYFileReader.ReadFile(filePath, out var splatCount, out var splatStride, out var attributes, out var verticesRawData);
+                using (verticesRawData)
+                using (var attributeMap = new NativeArray<int>(CreatePLYAttributeMap(attributes, splatStride), Allocator.TempJob))
+                {
+                    splats = new NativeArray<InputSplatData>(splatCount, Allocator.Persistent);
+                    try
+                    {
+                        var job = new ReadPLYDataJob
+                        {
+                            input = verticesRawData.Reinterpret<float>(1),
+                            attributeMap = attributeMap,
+                            inputStride = splatStride / sizeof(float),
+                            output = splats
+                        };
+                        job.Schedule(splatCount, 4096).Complete();
+                        LinearizeData(splats);
+                    }
+                    catch
+                    {
+                        splats.Dispose();
+                        throw;
+                    }
+                }
                 return;
             }
             if (isSPZ(filePath))
@@ -68,28 +79,68 @@ namespace GaussianSplatting.Editor.Utils
         static bool isPLY(string filePath) => filePath.EndsWith(".ply", true, CultureInfo.InvariantCulture);
         static bool isSPZ(string filePath) => filePath.EndsWith(".spz", true, CultureInfo.InvariantCulture);
 
-        [BurstCompile]
-        static unsafe void ReorderSHs(int splatCount, float* data)
+        static int[] CreatePLYAttributeMap(List<string> attributes, int stride)
         {
-            int splatStride = UnsafeUtility.SizeOf<InputSplatData>() / 4;
-            int shStartOffset = 6, shCount = 0;
-            float* tmp = stackalloc float[shCount * 3];
-            int idx = shStartOffset;
-            for (int i = 0; i < splatCount; ++i)
+            if (stride != attributes.Count * sizeof(float))
+                throw new IOException("Gaussian PLY vertex properties must be 32-bit floats");
+
+            int shPropertyCount = 0;
+            foreach (var attribute in attributes)
             {
-                for (int j = 0; j < shCount; ++j)
-                {
-                    tmp[j * 3 + 0] = data[idx + j];
-                    tmp[j * 3 + 1] = data[idx + j + shCount];
-                    tmp[j * 3 + 2] = data[idx + j + shCount * 2];
-                }
+                if (attribute.StartsWith("f_rest_"))
+                    ++shPropertyCount;
+            }
+            if (shPropertyCount != 0 && shPropertyCount != 9 && shPropertyCount != 24 && shPropertyCount != 45)
+                throw new IOException($"Unsupported PLY SH property count {shPropertyCount}; expected 0, 9, 24 or 45");
 
-                for (int j = 0; j < shCount * 3; ++j)
+            // Map by name so normals are optional and higher-degree inputs can be truncated.
+            string[] properties =
+            {
+                "x", "y", "z", "nx", "ny", "nz", "f_dc_0", "f_dc_1", "f_dc_2",
+                null, null, null, null, null, null, null, null, null,
+                "opacity", "scale_0", "scale_1", "scale_2", "rot_0", "rot_1", "rot_2", "rot_3"
+            };
+            int shCount = shPropertyCount / 3;
+            for (int coefficient = 0; coefficient < GaussianSplatAsset.kSHCoefficientCount; ++coefficient)
+            {
+                for (int channel = 0; channel < 3; ++channel)
                 {
-                    data[idx + j] = tmp[j];
+                    if (shCount > 0)
+                        properties[9 + coefficient * 3 + channel] = $"f_rest_{channel * shCount + coefficient}";
                 }
+            }
 
-                idx += splatStride;
+            var map = new int[properties.Length];
+            for (int i = 0; i < properties.Length; ++i)
+            {
+                map[i] = properties[i] == null ? -1 : attributes.IndexOf(properties[i]);
+                bool optional = (i >= 3 && i < 6) || properties[i] == null;
+                if (map[i] < 0 && !optional)
+                {
+                    throw new IOException($"Gaussian PLY is missing property {properties[i]}");
+                }
+            }
+            return map;
+        }
+
+        [BurstCompile]
+        struct ReadPLYDataJob : IJobParallelFor
+        {
+            [ReadOnly] public NativeArray<float> input;
+            [ReadOnly] public NativeArray<int> attributeMap;
+            public int inputStride;
+            public NativeArray<InputSplatData> output;
+
+            public unsafe void Execute(int index)
+            {
+                InputSplatData splat = default;
+                float* values = (float*)&splat;
+                for (int i = 0; i < attributeMap.Length; ++i)
+                {
+                    int source = attributeMap[i];
+                    values[i] = source < 0 ? 0 : input[index * inputStride + source];
+                }
+                output[index] = splat;
             }
         }
 

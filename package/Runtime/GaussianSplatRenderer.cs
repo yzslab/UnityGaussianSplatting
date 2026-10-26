@@ -231,8 +231,8 @@ namespace GaussianSplatting.Runtime
         [Range(0.05f, 20.0f)]
         [Tooltip("Additional scaling factor for opacity")]
         public float m_OpacityScale = 1.0f;
-        [Range(0, 3)] [Tooltip("Spherical Harmonics order to use")]
-        public int m_SHOrder = 3;
+        [Range(0, GaussianSplatAsset.kSHDegree)] [Tooltip("Spherical Harmonics order to use")]
+        public int m_SHOrder = GaussianSplatAsset.kSHDegree;
         [Tooltip("Show only Spherical Harmonics contribution, using gray color")]
         public bool m_SHOnly;
         [Range(1,30)] [Tooltip("Sort splats only every N frames")]
@@ -255,7 +255,7 @@ namespace GaussianSplatting.Runtime
         internal GraphicsBuffer m_GpuSortKeys;
         GraphicsBuffer m_GpuPosData;
         GraphicsBuffer m_GpuOtherData;
-        // GraphicsBuffer m_GpuSHData;
+        GraphicsBuffer m_GpuSHData;
         Texture m_GpuColorData;
         internal GraphicsBuffer m_GpuChunks;
         internal bool m_GpuChunksValid;
@@ -364,6 +364,7 @@ namespace GaussianSplatting.Runtime
             m_Asset.formatVersion == GaussianSplatAsset.kCurrentVersion &&
             m_Asset.posData != null &&
             m_Asset.otherData != null &&
+            m_Asset.shData != null &&
             m_Asset.colorData != null;
         public bool HasValidRenderSetup => m_GpuPosData != null && m_GpuOtherData != null && m_GpuChunks != null;
 
@@ -379,8 +380,8 @@ namespace GaussianSplatting.Runtime
             m_GpuPosData.SetData(asset.posData.GetData<uint>());
             m_GpuOtherData = new GraphicsBuffer(GraphicsBuffer.Target.Raw | GraphicsBuffer.Target.CopySource, (int) (asset.otherData.dataSize / 4), 4) { name = "GaussianOtherData" };
             m_GpuOtherData.SetData(asset.otherData.GetData<uint>());
-            // m_GpuSHData = new GraphicsBuffer(GraphicsBuffer.Target.Raw, (int) (asset.shData.dataSize / 4), 4) { name = "GaussianSHData" };
-            // m_GpuSHData.SetData(asset.shData.GetData<uint>());
+            m_GpuSHData = new GraphicsBuffer(GraphicsBuffer.Target.Raw, (int) (asset.shData.dataSize / 4), 4) { name = "GaussianSHData" };
+            m_GpuSHData.SetData(asset.shData.GetData<uint>());
             var (texWidth, texHeight) = GaussianSplatAsset.CalcTextureSize(asset.splatCount);
             var texFormat = GaussianSplatAsset.ColorFormatToGraphics(asset.colorFormat);
             var tex = new Texture2D(texWidth, texHeight, texFormat, TextureCreationFlags.DontInitializePixels | TextureCreationFlags.IgnoreMipmapLimit | TextureCreationFlags.DontUploadUponCreate) { name = "GaussianColorData" };
@@ -490,7 +491,7 @@ namespace GaussianSplatting.Runtime
             cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatPos, m_GpuPosData);
             cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatChunks, m_GpuChunks);
             cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatOther, m_GpuOtherData);
-            // cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatSH, m_GpuSHData);
+            cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatSH, m_GpuSHData);
             cmb.SetComputeTextureParam(cs, kernelIndex, Props.SplatColor, m_GpuColorData);
             cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatSelectedBits, m_GpuEditSelected ?? m_GpuPosData);
             cmb.SetComputeBufferParam(cs, kernelIndex, Props.SplatDeletedBits, m_GpuEditDeleted ?? m_GpuPosData);
@@ -512,7 +513,7 @@ namespace GaussianSplatting.Runtime
         {
             mat.SetBuffer(Props.SplatPos, m_GpuPosData);
             mat.SetBuffer(Props.SplatOther, m_GpuOtherData);
-            // mat.SetBuffer(Props.SplatSH, m_GpuSHData);
+            mat.SetBuffer(Props.SplatSH, m_GpuSHData);
             mat.SetTexture(Props.SplatColor, m_GpuColorData);
             mat.SetBuffer(Props.SplatSelectedBits, m_GpuEditSelected ?? m_GpuPosData);
             mat.SetBuffer(Props.SplatDeletedBits, m_GpuEditDeleted ?? m_GpuPosData);
@@ -535,7 +536,7 @@ namespace GaussianSplatting.Runtime
 
             DisposeBuffer(ref m_GpuPosData);
             DisposeBuffer(ref m_GpuOtherData);
-            // DisposeBuffer(ref m_GpuSHData);
+            DisposeBuffer(ref m_GpuSHData);
             DisposeBuffer(ref m_GpuChunks);
 
             DisposeBuffer(ref m_GpuView);
@@ -973,12 +974,12 @@ namespace GaussianSplatting.Runtime
 
             int posStride = (int)(asset.posData.dataSize / asset.splatCount);
             int otherStride = (int)(asset.otherData.dataSize / asset.splatCount);
-            // int shStride = (int) (asset.shData.dataSize / asset.splatCount);
+            int shStride = (int) (asset.shData.dataSize / asset.splatCount);
 
             // create new GPU buffers
             var newPosData = new GraphicsBuffer(GraphicsBuffer.Target.Raw | GraphicsBuffer.Target.CopySource, newSplatCount * posStride / 4, 4) { name = "GaussianPosData" };
             var newOtherData = new GraphicsBuffer(GraphicsBuffer.Target.Raw | GraphicsBuffer.Target.CopySource, newSplatCount * otherStride / 4, 4) { name = "GaussianOtherData" };
-            // var newSHData = new GraphicsBuffer(GraphicsBuffer.Target.Raw, newSplatCount * shStride / 4, 4) { name = "GaussianSHData" };
+            var newSHData = new GraphicsBuffer(GraphicsBuffer.Target.Raw, newSplatCount * shStride / 4, 4) { name = "GaussianSHData" };
 
             // new texture is a RenderTexture so we can write to it from a compute shader
             var (texWidth, texHeight) = GaussianSplatAsset.CalcTextureSize(newSplatCount);
@@ -1000,12 +1001,12 @@ namespace GaussianSplatting.Runtime
             InitSortBuffers(newSplatCount);
 
             // copy existing data over into new buffers
-            EditCopySplats(transform, newPosData, newOtherData, newColorData, newEditDeleted, newSplatCount, 0, 0, m_SplatCount);
+            EditCopySplats(transform, newPosData, newOtherData, newSHData, newColorData, newEditDeleted, newSplatCount, 0, 0, m_SplatCount);
 
             // use the new buffers and the new splat count
             m_GpuPosData.Dispose();
             m_GpuOtherData.Dispose();
-            // m_GpuSHData.Dispose();
+            m_GpuSHData.Dispose();
             DestroyImmediate(m_GpuColorData);
             m_GpuView.Dispose();
 
@@ -1015,7 +1016,7 @@ namespace GaussianSplatting.Runtime
 
             m_GpuPosData = newPosData;
             m_GpuOtherData = newOtherData;
-            // m_GpuSHData = newSHData;
+            m_GpuSHData = newSHData;
             m_GpuColorData = newColorData;
             m_GpuView = newGpuView;
             m_GpuEditSelected = newEditSelected;
@@ -1033,7 +1034,7 @@ namespace GaussianSplatting.Runtime
         {
             EditCopySplats(
                 dst.transform,
-                dst.m_GpuPosData, dst.m_GpuOtherData, dst.m_GpuColorData, dst.m_GpuEditDeleted,
+                dst.m_GpuPosData, dst.m_GpuOtherData, dst.m_GpuSHData, dst.m_GpuColorData, dst.m_GpuEditDeleted,
                 dst.splatCount,
                 copySrcStartIndex, copyDstStartIndex, copyCount);
             dst.editModified = true;
@@ -1041,7 +1042,7 @@ namespace GaussianSplatting.Runtime
 
         public void EditCopySplats(
             Transform dstTransform,
-            GraphicsBuffer dstPos, GraphicsBuffer dstOther, Texture dstColor,
+            GraphicsBuffer dstPos, GraphicsBuffer dstOther, GraphicsBuffer dstSH, Texture dstColor,
             GraphicsBuffer dstEditDeleted,
             int dstSize,
             int copySrcStartIndex, int copyDstStartIndex, int copyCount)
@@ -1057,7 +1058,7 @@ namespace GaussianSplatting.Runtime
 
             cmb.SetComputeBufferParam(m_CSSplatUtilities, (int)KernelIndices.CopySplats, "_CopyDstPos", dstPos);
             cmb.SetComputeBufferParam(m_CSSplatUtilities, (int)KernelIndices.CopySplats, "_CopyDstOther", dstOther);
-            // cmb.SetComputeBufferParam(m_CSSplatUtilities, (int)KernelIndices.CopySplats, "_CopyDstSH", dstSH);
+            cmb.SetComputeBufferParam(m_CSSplatUtilities, (int)KernelIndices.CopySplats, "_CopyDstSH", dstSH);
             cmb.SetComputeTextureParam(m_CSSplatUtilities, (int)KernelIndices.CopySplats, "_CopyDstColor", dstColor);
             cmb.SetComputeBufferParam(m_CSSplatUtilities, (int)KernelIndices.CopySplats, "_CopyDstEditDeleted", dstEditDeleted);
 

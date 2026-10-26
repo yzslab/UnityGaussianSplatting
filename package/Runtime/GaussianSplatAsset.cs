@@ -10,7 +10,10 @@ namespace GaussianSplatting.Runtime
 {
     public class GaussianSplatAsset : ScriptableObject
     {
-        public const int kCurrentVersion = 2023_10_20;
+        // Degree-1 SH tables have different strides; older assets must be recreated.
+        public const int kCurrentVersion = 2026_10_26;
+        public const int kSHDegree = 1;
+        public const int kSHCoefficientCount = 3;
         public const int kChunkSize = 256;
         public const int kTextureWidth = 2048; // allows up to 32M splats on desktop GPU (2k width x 16k height)
         public const int kMaxSplats = 8_600_000; // mostly due to 2GB GPU buffer size limit when exporting a splat (2GB / 248B is just over 8.6M)
@@ -82,21 +85,21 @@ namespace GaussianSplatting.Runtime
 
         public struct SHTableItemFloat32
         {
-            public float3 sh1, sh2, sh3, sh4, sh5, sh6, sh7, sh8, sh9, shA, shB, shC, shD, shE, shF;
+            public float3 sh1, sh2, sh3;
             public float3 shPadding; // pad to multiple of 16 bytes
         }
         public struct SHTableItemFloat16
         {
-            public half3 sh1, sh2, sh3, sh4, sh5, sh6, sh7, sh8, sh9, shA, shB, shC, shD, shE, shF;
-            public half3 shPadding; // pad to multiple of 16 bytes
+            public half3 sh1, sh2, sh3;
+            public half3 shPadding; // pad to multiple of 4 bytes (24 bytes total)
         }
         public struct SHTableItemNorm11
         {
-            public uint sh1, sh2, sh3, sh4, sh5, sh6, sh7, sh8, sh9, shA, shB, shC, shD, shE, shF;
+            public uint sh1, sh2, sh3;
         }
         public struct SHTableItemNorm6
         {
-            public ushort sh1, sh2, sh3, sh4, sh5, sh6, sh7, sh8, sh9, shA, shB, shC, shD, shE, shF;
+            public ushort sh1, sh2, sh3;
             public ushort shPadding; // pad to multiple of 4 bytes
         }
 
@@ -118,12 +121,13 @@ namespace GaussianSplatting.Runtime
             m_DataHash = hash;
         }
 
-        public void SetAssetFiles(TextAsset dataChunk, TextAsset dataPos, TextAsset dataOther, TextAsset dataColor)
+        public void SetAssetFiles(TextAsset dataChunk, TextAsset dataPos, TextAsset dataOther, TextAsset dataColor, TextAsset dataSh)
         {
             m_ChunkData = dataChunk;
             m_PosData = dataPos;
             m_OtherData = dataOther;
             m_ColorData = dataColor;
+            m_SHData = dataSh;
         }
 
         public static int GetOtherSizeNoSHIndex(VectorFormat scaleFormat)
@@ -186,6 +190,8 @@ namespace GaussianSplatting.Runtime
         public static long CalcSHDataSize(int splatCount, SHFormat formatSh)
         {
             int shCount = GetSHCount(formatSh, splatCount);
+            if (formatSh >= SHFormat.Cluster64k && shCount >= splatCount)
+                return splatCount * UnsafeUtility.SizeOf<SHTableItemFloat16>();
             return formatSh switch
             {
                 SHFormat.Float32 => shCount * UnsafeUtility.SizeOf<SHTableItemFloat32>(),
@@ -209,7 +215,7 @@ namespace GaussianSplatting.Runtime
         [SerializeField] TextAsset m_PosData;
         [SerializeField] TextAsset m_ColorData;
         [SerializeField] TextAsset m_OtherData;
-        // [SerializeField] TextAsset m_SHData;
+        [SerializeField] TextAsset m_SHData;
         // Chunk data is optional (if data formats are fully lossless then there's no chunking)
         [SerializeField] TextAsset m_ChunkData;
 
@@ -223,7 +229,7 @@ namespace GaussianSplatting.Runtime
         public TextAsset posData => m_PosData;
         public TextAsset colorData => m_ColorData;
         public TextAsset otherData => m_OtherData;
-        // public TextAsset shData => m_SHData;
+        public TextAsset shData => m_SHData;
         public TextAsset chunkData => m_ChunkData;
         public CameraInfo[] cameras => m_Cameras;
 
